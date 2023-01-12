@@ -1,0 +1,44 @@
+version: "3"
+
+services:
+
+  db:
+    container_name: db
+    image: postgres:14.1-alpine
+    env_file:
+      - ./.env
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "8088:5432"
+    networks:
+      - app
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8088" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  api:
+    container_name: api
+    build: ./app
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+    networks:
+      - app
+    ports:
+      - "8089:8080"
+    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn main:app --host 0.0.0.0 --port 8080 --reload'
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+networks:
+  app:
+    driver: bridge
