@@ -18,9 +18,7 @@ def get_db():
 
 
 @app.get("/v1/user/", response_model=UserSchema.Users)
-async def get_user_by_id(
-        user_id: int,
-        db: Session = Depends(get_db)):
+async def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
     return await user_service.get_user_by_id(db, user_id=user_id)
 
 
