@@ -3,11 +3,12 @@ version: "3"
 services:
 
   db:
-    container_name: db
+    container_name: postgres_fastapi
     image: postgres:14.1-alpine
     env_file:
       - ./.env
     volumes:
+      - db:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "8088:5432"
@@ -20,6 +21,18 @@ services:
       timeout: 10s
       retries: 5
 
+  cache:
+    container_name: redis_fastapi
+    image: redis:6.2-alpine
+    env_file:
+      - ./.env
+    restart: always
+    ports:
+      - '6379:6379'
+    command: "redis-server --save 20 1 --loglevel warning --requirepass $$REDIS_HOST_PASSWORD"
+    volumes:
+      - cache:/data
+
   api:
     container_name: api
     build: ./app
@@ -27,18 +40,28 @@ services:
       - ./.env
     depends_on:
       - db
+      - cache
     networks:
       - app
     ports:
       - "8089:8080"
-    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn main:app --host 0.0.0.0 --port 8080 --reload'
+    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload'
     deploy:
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
         window: 120s
-
+    volumes:
+      - .:/workspace
 networks:
   app:
     driver: bridge
+
+volumes:
+  db:
+    driver: local
+  cache:
+    driver: local
+  api:
+    driver: local

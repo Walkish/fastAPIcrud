@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String
-from configs.postgres_database import Base
+from app.configs.postgres_database import Base
 
 
 class User(Base):

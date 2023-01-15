@@ -1,7 +1,6 @@
 create table users
 (
-    row_id  integer generated always as identity primary key,
-    user_id integer    not null unique,
+    user_id integer primary key,
     name    varchar not null,
     company varchar not null,
     address varchar not null,
